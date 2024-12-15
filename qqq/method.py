@@ -1,12 +1,7 @@
 import numpy as np
 import pandas as pd
-import xgboost as xgb
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_squared_error
-import matplotlib.pyplot as plt
 import pandas_ta as ta
-import pandas as pd
-import mplfinance as mpf
+
 
 def getDf(dataPath):
     # 读取数据
