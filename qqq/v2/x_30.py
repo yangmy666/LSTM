@@ -11,29 +11,16 @@ from qqq.v2.data_treat import getDf
 future_days=30
 
 # 读取数据
-df = getDf('C:\py_project\LSTM\stock_data\\GOOGL.csv',future_days)
+df = getDf('C:\py_project\LSTM\stock_data\\QQQ.csv',future_days)
 
 # 特征列（使用前一天的数据）
-features = ['Month','Prev_Month', 'Prev_Open', 'Prev_Close',
-            'Prev_Volume','Prev_SMA_125','Prev_SMA_186',
-           'Prev_ADX', 'Prev_DI_PLUS', 'Prev_DI_MINUS',
-            'Prev_RSI', 'Prev_WILLR', 'Prev_CCI', 'Prev_MOM', 'Prev_ROC',
-             'Prev_BB_WIDTH', 'Prev_BB_PERCENT',
-             'Prev_ATR', 'Prev_ATR_RATIO', 'Prev_HVOL',  'Prev_OBV',
-            'Prev_CMF', 'Prev_AD', 'Prev_SKEW', 'Prev_KURT', 'Prev_ZSCORE'
+#ALL
+features = ['DateTime','Month','Prev_Month', 'Prev_Open', 'Prev_Close','Prev_Volume',
+            'Prev_SMA','Prev_SMA_125','Prev_SMA_186',
+            'Prev_ADX', 'Prev_DI_PLUS', 'Prev_DI_MINUS',
+            'Prev_RSI','Prev_WEEK_RSI', 'Prev_ATR',
+            'Prev_VOL_SMA_125','Prev_VOL_SMA_186',
 ]
-
-# features = ['Month','Prev_Month', 'Prev_Open', 'Prev_Close', 'Prev_High', 'Prev_Low',
-#             'Prev_Volume','Prev_SMA_125','Prev_SMA_186','Prev_SMA', 'Prev_EMA', 'Prev_WMA',
-#             'Prev_HMA', 'Prev_RMA', 'Prev_ADX', 'Prev_DI_PLUS', 'Prev_DI_MINUS',
-#             'Prev_KAMA', 'Prev_RSI', 'Prev_WILLR', 'Prev_CCI', 'Prev_MOM', 'Prev_ROC', 'Prev_BB_LOWER',
-#             'Prev_BB_MIDDLE', 'Prev_BB_UPPER', 'Prev_BB_WIDTH', 'Prev_BB_PERCENT',
-#             'Prev_KC_LOWER', 'Prev_KC_MIDDLE', 'Prev_KC_UPPER', 'Prev_DC_LOWER', 'Prev_DC_MIDDLE',
-#             'Prev_DC_UPPER', 'Prev_ATR', 'Prev_ATR_RATIO', 'Prev_HVOL', 'Prev_VWMA', 'Prev_OBV',
-#             'Prev_CMF', 'Prev_AD', 'Prev_SKEW', 'Prev_KURT', 'Prev_ZSCORE'
-# ]
-
-# features = ['Prev_Open', 'Prev_Close', 'Prev_High', 'Prev_Low']
 
 # 目标列（预测未来的收盘价）
 target = 'Close'
@@ -43,14 +30,14 @@ X = df[features]
 y = df[target]
 
 # 按时间划分训练集和测试集
-train_size = int(len(df) * 0.95)
+train_size = int(len(df) * 0.97)
 X_train, y_train = X[:train_size] , y[:train_size]
 X_test, y_test = X[train_size:] , y[train_size:]
 df_test=df[train_size:]
 
 # 检查 NaN 或 Infinity
 if y_train.isna().any() or np.isinf(y_train).any():
-    print("标签数据中存在 NaN 或 Infinity!")
+    print("训练目标数据中存在 NaN 或 Infinity!")
 
 # 定义 XGBoost 模型d
 model = xgb.XGBRegressor(objective='reg:squarederror')
@@ -114,7 +101,17 @@ for i in range(len(X_test)):
 y_test = y_test.dropna()
 # 计算均方误差
 mse = mean_squared_error(y_test, y_preds)
-print(f"Mean Squared Error: {mse:.2f}")
+# 计算标准差
+std_dev = np.sqrt(mse)
+# 计算平均值
+average_price = y_test.mean()
+# 计算误差百分比
+error_percentage = (std_dev / average_price) * 100
+# 打印结果
+print(f"MSE: {mse:.2f}")
+print(f"标准差: {std_dev:.2f}")
+print(f"测试集目标值均值: {average_price:.2f}")
+print(f"误差百分比: {error_percentage:.2f}%")
 
 # 确保 'Date' 列是 datetime 类型，并设置为索引
 k_test['Date'] = pd.to_datetime(k_test['Date'])  # 强制转换为 datetime 类型
