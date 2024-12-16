@@ -2,13 +2,12 @@ import numpy as np
 import pandas as pd
 import pandas_ta as ta
 
-
 def getDf(dataPath,future_days):
     # 读取数据
     df = pd.read_csv(dataPath)
     # 假设 'Date' 列是字符串类型，需要转换为日期类型
     df['Date'] = pd.to_datetime(df['Date'])
-    df['DateTime'] = (df['Date'] - df['Date'].min()) / np.timedelta64(1, 'D')
+    # df['DateTime'] = (df['Date'] - df['Date'].min()) / np.timedelta64(1, 'D')
     df['Month'] = df['Date'].dt.month
     df['SMA_125'] = ta.sma(df['Close'], length=125)
     df['SMA_186'] = ta.sma(df['Close'], length=186)
@@ -127,7 +126,7 @@ def getDf(dataPath,future_days):
         # 创建新行的数据字典
         new_row = {
             'Date': next_date,  # 下一日期
-            'Month': None,
+            'Month': next_date.month,
             'Open': None,
             'Close': None,
             'High': None,
