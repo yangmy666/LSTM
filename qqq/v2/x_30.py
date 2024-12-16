@@ -11,7 +11,7 @@ from qqq.v2.data_treat import getDf
 future_days=30
 
 # 读取数据
-df = getDf('C:\py_project\LSTM\stock_data\\QQQ.csv',future_days)
+df = getDf('C:\py_project\LSTM\stock_data\\TSLA.csv',future_days)
 
 # 特征列（使用前一天的数据）
 #ALL
@@ -30,7 +30,7 @@ X = df[features]
 y = df[target]
 
 # 按时间划分训练集和测试集
-train_size = int(len(df) * 0.97)
+train_size = int(len(df) * 0.8)
 X_train, y_train = X[:train_size] , y[:train_size]
 X_test, y_test = X[train_size:] , y[train_size:]
 df_test=df[train_size:]

@@ -1,8 +1,8 @@
 import yfinance as yf
 
-filename='GOOGL'
+filename='TSLA'
 # 下载QQQ的历史数据，从2010年1月1日到2020年1月1日
-data = yf.download(filename, start='2004-8-19', end='2024-12-14')
+data = yf.download(filename, start='2010-6-29', end='2024-12-17')
 
 # 查看前几行数据，确保下载成功
 print(data.head())

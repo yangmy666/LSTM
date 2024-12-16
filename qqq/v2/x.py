@@ -8,25 +8,42 @@ from sklearn.metrics import mean_squared_error
 from qqq.v2.data_treat import getDf
 
 #预测未来第几天
-future_days=30
+future_days=100
 
 # 读取数据
-df = getDf('C:\py_project\LSTM\stock_data\\QQQ.csv',future_days)
+df = getDf('C:\py_project\LSTM\stock_data\\TSLA.csv',future_days)
 
 # 特征列（使用前一天的数据）
 #ALL
-features = ['DateTime','Month','Prev_Month', 'Prev_Open', 'Prev_Close', 'Prev_High', 'Prev_Low',
-            'Prev_Volume','Prev_SMA_125','Prev_SMA_186','Prev_SMA', 'Prev_EMA', 'Prev_WMA',
-            'Prev_HMA', 'Prev_RMA', 'Prev_ADX', 'Prev_DI_PLUS', 'Prev_DI_MINUS',
-            'Prev_KAMA', 'Prev_RSI', 'Prev_WILLR', 'Prev_CCI', 'Prev_MOM', 'Prev_ROC', 'Prev_BB_LOWER',
-            'Prev_BB_MIDDLE', 'Prev_BB_UPPER', 'Prev_BB_WIDTH', 'Prev_BB_PERCENT',
-            'Prev_KC_LOWER', 'Prev_KC_MIDDLE', 'Prev_KC_UPPER', 'Prev_DC_LOWER', 'Prev_DC_MIDDLE',
-            'Prev_DC_UPPER', 'Prev_ATR', 'Prev_ATR_RATIO', 'Prev_HVOL', 'Prev_VWMA', 'Prev_OBV',
-            'Prev_CMF', 'Prev_AD', 'Prev_SKEW', 'Prev_KURT', 'Prev_ZSCORE',
-            'Prev_VOL_SMA_125','Prev_VOL_SMA_186','Prev_VOL_SMA_14',
-            'Prev_AMOUNT','Prev_AMOUNT_SMA_125','Prev_AMOUNT_SMA_186','Prev_AMOUNT_SMA_14',
-            'Prev_MACD', 'Prev_SIGNAL', 'Prev_HIST','Prev_WEEK_RSI', 'Prev_MONTH_RSI',
+features = ['DateTime','Month',
+            'Prev_Month', 'Prev_Open', 'Prev_Close', 'Prev_High', 'Prev_Low','Prev_Volume',
+            # **均线类 (Moving Averages)**
+            'Prev_SMA', 'Prev_SMA_60', 'Prev_SMA_125', 'Prev_SMA_186',
+            'Prev_EMA', 'Prev_EMA_60', 'Prev_EMA_125', 'Prev_EMA_186',
+            'Prev_WMA', 'Prev_HMA', 'Prev_RMA',
+            # **动量类 (Momentum Indicators)**
+            'Prev_RSI', 'Prev_WEEK_RSI', 'Prev_MONTH_RSI',
+            'Prev_KAMA', 'Prev_MACD', 'Prev_SIGNAL', 'Prev_HIST',
+            'Prev_MOM', 'Prev_ROC',
+            'Prev_WILLR', 'Prev_CCI',
+            # **趋势类 (Trend Indicators)**
+            'Prev_ADX', 'Prev_DI_PLUS', 'Prev_DI_MINUS',
+            # **均值回归类 (Mean Reversion Indicators)**
+            'Prev_BB_LOWER', 'Prev_BB_MIDDLE', 'Prev_BB_UPPER', 'Prev_BB_WIDTH', 'Prev_BB_PERCENT',
+            'Prev_KC_LOWER', 'Prev_KC_MIDDLE', 'Prev_KC_UPPER',
+            'Prev_DC_LOWER', 'Prev_DC_MIDDLE', 'Prev_DC_UPPER',
+            # **波动性类 (Volatility Indicators)**
+            'Prev_ATR', 'Prev_ATR_RATIO', 'Prev_HVOL',
+            # **成交量类 (Volume Indicators)**
+            'Prev_VWMA', 'Prev_OBV', 'Prev_CMF', 'Prev_AD',
+            'Prev_VOL_SMA_14', 'Prev_VOL_SMA_60', 'Prev_VOL_SMA_125', 'Prev_VOL_SMA_186',
+            'Prev_VOL_EMA_14', 'Prev_VOL_EMA_60', 'Prev_VOL_EMA_125', 'Prev_VOL_EMA_186',
+            'Prev_AMOUNT', 'Prev_AMOUNT_SMA_14', 'Prev_AMOUNT_SMA_60', 'Prev_AMOUNT_SMA_125', 'Prev_AMOUNT_SMA_186',
+            # **统计类 (Statistical Indicators)**
+            'Prev_SKEW', 'Prev_KURT', 'Prev_ZSCORE'
 ]
+
+# features = ['DateTime', 'Prev_Open', 'Prev_Close', 'Prev_High', 'Prev_Low']
 
 # 目标列（预测未来的收盘价）
 target = 'Close'

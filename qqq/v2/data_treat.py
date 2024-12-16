@@ -11,22 +11,16 @@ def getDf(dataPath,future_days):
     df_min = df['Date'].min()
     df['DateTime'] = (df['Date'] - df_min) / np.timedelta64(1, 'D')
     df['Month'] = df['Date'].dt.month
-    df['SMA_125'] = ta.sma(df['Close'], length=125)
-    df['SMA_186'] = ta.sma(df['Close'], length=186)
-    df['EMA_125'] = ta.ema(df['Close'], length=125)
-    df['EMA_186'] = ta.ema(df['Close'], length=186)
-    df['VOL_SMA_125'] = ta.sma(df['Volume'], length=125)
-    df['VOL_SMA_186'] = ta.sma(df['Volume'], length=186)
-    df['VOL_SMA_14'] = ta.sma(df['Volume'], length=14)
-    df['VOL_EMA_125'] = ta.ema(df['Volume'], length=125)
-    df['VOL_EMA_186'] = ta.ema(df['Volume'], length=186)
-    df['AMOUNT']=df['Volume']*df['Close']#成交额
-    df['AMOUNT_SMA_125'] = ta.sma(df['AMOUNT'], length=125)
-    df['AMOUNT_SMA_186'] = ta.sma(df['AMOUNT'], length=186)
-    df['AMOUNT_SMA_14'] = ta.sma(df['AMOUNT'], length=14)
+
     ### **趋势类 (MA Indicators)**
     df["SMA"] = ta.sma(df["Close"], length=14)  # 简单移动平均线
+    df['SMA_60'] = ta.sma(df['Close'], length=60)
+    df['SMA_125'] = ta.sma(df['Close'], length=125)
+    df['SMA_186'] = ta.sma(df['Close'], length=186)
     df["EMA"] = ta.ema(df["Close"], length=14)  # 指数移动平均线
+    df['EMA_60'] = ta.ema(df['Close'], length=60)
+    df['EMA_125'] = ta.ema(df['Close'], length=125)
+    df['EMA_186'] = ta.ema(df['Close'], length=186)
     df["WMA"] = ta.wma(df["Close"], length=14)  # 加权移动平均线
     df["HMA"] = ta.hma(df["Close"], length=14)  # Hull 移动平均线
     df["RMA"] = ta.rma(df["Close"], length=14)  # 指数平滑移动平均线
@@ -39,6 +33,7 @@ def getDf(dataPath,future_days):
     df['MACD'] = macd['MACD_12_26_9']# 获取 MACD 数值
     df['SIGNAL'] = macd['MACDh_12_26_9']# 获取 SIGNAL 数值
     df['HIST'] = macd['MACDs_12_26_9']# 获取 HIST 数值
+
     ### **动量类 (Momentum Indicators)**
     df["RSI"] = ta.rsi(df["Close"], length=14)  # RSI
     weekly_df = df.groupby(pd.Grouper(key='Date', freq='W')).last()# 按周分组，获取每周最后一个交易日的收盘价
@@ -60,6 +55,7 @@ def getDf(dataPath,future_days):
     df["CCI"] = ta.cci(df["High"], df["Low"], df["Close"], length=14)  # 商品通道指数
     df["MOM"] = ta.mom(df["Close"], length=10)  # 动量指标
     df["ROC"] = ta.roc(df["Close"], length=10)  # 价格变化率
+
     ### **均值回归类 (Mean Reversion Indicators)**
     bbands_df = ta.bbands(df["Close"])  # 布林带
     df["BB_LOWER"], df["BB_MIDDLE"], df["BB_UPPER"], df["BB_WIDTH"], df["BB_PERCENT"] = \
@@ -70,15 +66,31 @@ def getDf(dataPath,future_days):
     donchian_df = ta.donchian(df["High"], df["Low"], length=20)  # 唐奇安通道
     df["DC_LOWER"], df["DC_MIDDLE"], df["DC_UPPER"] = \
         donchian_df["DCL_20_20"], donchian_df["DCM_20_20"], donchian_df["DCU_20_20"]
+
     ### **波动性类 (Volatility Indicators)**
     df["ATR"] = ta.atr(df["High"], df["Low"], df["Close"], length=14)  # 平均真实波幅
     df['ATR_RATIO'] = df['ATR'] / df['Close']
     df["HVOL"] = ta.pvol(df["Close"], df["Volume"], length=20)  # 历史波动率
+
     ### **成交量类 (Volume Indicators)**
     df["VWMA"] = ta.vwma(df["Close"], df["Volume"], length=14)  # 成交量加权移动平均线
     df["OBV"] = ta.obv(df["Close"], df["Volume"])  # 平衡成交量
     df["CMF"] = ta.cmf(df["High"], df["Low"], df["Close"], df["Volume"], length=20)  # 钱德动量摆动
     df["AD"] = ta.ad(df["High"], df["Low"], df["Close"], df["Volume"])  # 累积/分布线
+    df['VOL_SMA_14'] = ta.sma(df['Volume'], length=14)
+    df['VOL_SMA_60'] = ta.sma(df['Volume'], length=60)
+    df['VOL_SMA_125'] = ta.sma(df['Volume'], length=125)
+    df['VOL_SMA_186'] = ta.sma(df['Volume'], length=186)
+    df['VOL_EMA_14'] = ta.ema(df['Volume'], length=14)
+    df['VOL_EMA_60'] = ta.ema(df['Volume'], length=60)
+    df['VOL_EMA_125'] = ta.ema(df['Volume'], length=125)
+    df['VOL_EMA_186'] = ta.ema(df['Volume'], length=186)
+    df['AMOUNT']=df['Volume']*df['Close']#成交额
+    df['AMOUNT_SMA_14'] = ta.sma(df['AMOUNT'], length=14)
+    df['AMOUNT_SMA_60'] = ta.sma(df['AMOUNT'], length=60)
+    df['AMOUNT_SMA_125'] = ta.sma(df['AMOUNT'], length=125)
+    df['AMOUNT_SMA_186'] = ta.sma(df['AMOUNT'], length=186)
+
     ### **统计类 (Statistical Indicators)**
     df["SKEW"] = ta.skew(df["Close"], length=10)  # 偏度
     df["KURT"] = df["Close"].kurtosis()  # 峰度
