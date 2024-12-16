@@ -10,7 +10,7 @@ import mplfinance as mpf
 
 # 假设你的数据存储在名为 stock_data.csv 的文件中
 # 读取数据
-df = pd.read_csv('C:\py_project\LSTM\stock_data\QQQ.csv')
+df = pd.read_csv('/stock_data/QQQ.csv')
 
 # 假设 'Date' 列是字符串类型，需要转换为日期类型
 df['Date'] = pd.to_datetime(df['Date'])

@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import pandas_ta as ta
 
 # 使用绝对路径读取数据
-df = pd.read_csv(r'C:\py_project\LSTM\stock_data\QQQ.csv')
+df = pd.read_csv(r'/stock_data/QQQ.csv')
 
 # 假设 'Date' 列是字符串类型，需要转换为日期类型
 df['Date'] = pd.to_datetime(df['Date'])
