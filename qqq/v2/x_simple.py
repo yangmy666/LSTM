@@ -44,7 +44,7 @@ X = df[features]
 y = df[target]
 
 # 按时间划分训练集和测试集
-train_size = int(len(df) * 0.97)
+train_size = int(len(df) * 0.7)
 X_train, y_train = X[:train_size] , y[:train_size]
 X_test, y_test = X[train_size:] , y[train_size:]
 df_test=df[train_size:]

@@ -8,7 +8,7 @@ from sklearn.metrics import mean_squared_error
 from qqq.v2.data_treat import getDf
 
 #预测未来第几天
-future_days=100
+future_days=5
 
 # 读取数据
 df = getDf('C:\py_project\LSTM\stock_data\\QQQ.csv',future_days)
@@ -119,7 +119,7 @@ for i in range(len(X_test)):
         y_train = np.append(y_train, y_current)
 
         # 使用新的训练数据重新训练模型
-        model.fit(X_train, y_train)
+        #model.fit(X_train, y_train)
 
 y_test = y_test.dropna()
 # 计算均方误差
