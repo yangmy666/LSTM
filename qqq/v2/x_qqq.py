@@ -8,30 +8,25 @@ from sklearn.metrics import mean_squared_error
 from qqq.v2.data_treat import getDf
 
 #预测未来第几天
-future_days=30
+future_days=5
 
 # 读取数据
-df = getDf('C:\py_project\LSTM\stock_data\\TSLA.csv',future_days)
+df = getDf('C:\py_project\LSTM\stock_data\\QQQ.csv',future_days)
 
 # 特征列（使用前一天的数据）
-features = ['DateTime','Month','Prev_Month',
-            'Prev_Open', 'Prev_Close', 'Prev_High', 'Prev_Low','Prev_Volume',
+#ALL
+features = ['DateTime',
+            'Prev_Close',
             # **均线类 (Moving Averages)**
-            'Prev_EMA_7', 'Prev_EMA_14', 'Prev_EMA_28',
-            'Prev_EMA_56','Prev_EMA_112','Prev_EMA_224',
+            'Prev_Distance_SMA_125',
             # **动量类 (Momentum Indicators)**
-            'Prev_RSI', 'Prev_WEEK_RSI', 'Prev_MONTH_RSI',
+            'Prev_RSI','Prev_WEEK_RSI',
             # **趋势类 (Trend Indicators)**
             'Prev_ADX', 'Prev_DI_PLUS', 'Prev_DI_MINUS',
-            # **均值回归类 (Mean Reversion Indicators)**
-            'Prev_BB_LOWER', 'Prev_BB_MIDDLE', 'Prev_BB_UPPER', 'Prev_BB_WIDTH', 'Prev_BB_PERCENT',
             # **波动性类 (Volatility Indicators)**
-            'Prev_ATR',
+            'Prev_ATR_RATIO',
             # **成交量类 (Volume Indicators)**
-            'Prev_VOL_EMA_7', 'Prev_VOL_EMA_14', 'Prev_VOL_EMA_28',
-            'Prev_VOL_EMA_56', 'Prev_VOL_EMA_112', 'Prev_VOL_EMA_224',
-            # **统计类 (Statistical Indicators)**
-            'Prev_SKEW', 'Prev_KURT', 'Prev_ZSCORE'
+            'Prev_Distance_VOL_SMA_125',
 ]
 
 # features = ['DateTime', 'Prev_Open', 'Prev_Close', 'Prev_High', 'Prev_Low']
@@ -44,7 +39,7 @@ X = df[features]
 y = df[target]
 
 # 按时间划分训练集和测试集
-train_size = int(len(df) * 0.7)
+train_size = int(len(df) * 0.99)
 X_train, y_train = X[:train_size] , y[:train_size]
 X_test, y_test = X[train_size:] , y[train_size:]
 df_test=df[train_size:]
@@ -62,7 +57,7 @@ model.fit(X_train, y_train)
 xgb.plot_importance(model, importance_type='weight', max_num_features=len(X.columns))
 plt.show()
 
-print("开始滚动预测-----")
+print("开始预测-----")
 
 # 用来存储预测值
 y_preds = []

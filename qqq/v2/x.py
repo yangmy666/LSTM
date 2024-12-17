@@ -8,7 +8,7 @@ from sklearn.metrics import mean_squared_error
 from qqq.v2.data_treat import getDf
 
 #预测未来第几天
-future_days=5
+future_days=30
 
 # 读取数据
 df = getDf('C:\py_project\LSTM\stock_data\\QQQ.csv',future_days)
@@ -53,7 +53,7 @@ X = df[features]
 y = df[target]
 
 # 按时间划分训练集和测试集
-train_size = int(len(df) * 0.95)
+train_size = int(len(df) * 0.97)
 X_train, y_train = X[:train_size] , y[:train_size]
 X_test, y_test = X[train_size:] , y[train_size:]
 df_test=df[train_size:]
@@ -119,7 +119,7 @@ for i in range(len(X_test)):
         y_train = np.append(y_train, y_current)
 
         # 使用新的训练数据重新训练模型
-        #model.fit(X_train, y_train)
+        model.fit(X_train, y_train)
 
 y_test = y_test.dropna()
 # 计算均方误差

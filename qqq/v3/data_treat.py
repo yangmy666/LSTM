@@ -14,8 +14,6 @@ def getDf(dataPath,future_days):
 
     ### **趋势类 (MA Indicators)**
     df["SMA_14"] = ta.sma(df["Close"], length=14)  # 简单移动平均线
-    df["SMA_125"] = ta.sma(df["Close"], length=125)
-    df['Distance_SMA_125']=(df['Close']-df['SMA_125'])/df['SMA_125'] #收盘价与sma125的距离%
     df["EMA_7"] = ta.ema(df["Close"], length=7) # 指数移动平均线
     df["EMA_14"] = ta.ema(df["Close"], length=14)
     df['EMA_28'] = ta.ema(df['Close'], length=28)
@@ -78,8 +76,6 @@ def getDf(dataPath,future_days):
     df["OBV"] = ta.obv(df["Close"], df["Volume"])  # 平衡成交量
     df["CMF"] = ta.cmf(df["High"], df["Low"], df["Close"], df["Volume"], length=20)  # 钱德动量摆动
     df["AD"] = ta.ad(df["High"], df["Low"], df["Close"], df["Volume"])  # 累积/分布线
-    df["VOL_SMA_125"] = ta.sma(df["Volume"], length=125)
-    df['Distance_VOL_SMA_125'] = (df['Volume'] - df['VOL_SMA_125']) / df['VOL_SMA_125']
     df["VOL_EMA_7"] = ta.ema(df["Volume"], length=7) # 指数移动平均线
     df["VOL_EMA_14"] = ta.ema(df["Volume"], length=14)
     df['VOL_EMA_28'] = ta.ema(df['Volume'], length=28)
