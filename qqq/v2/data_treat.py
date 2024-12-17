@@ -13,14 +13,13 @@ def getDf(dataPath,future_days):
     df['Month'] = df['Date'].dt.month
 
     ### **趋势类 (MA Indicators)**
-    df["SMA"] = ta.sma(df["Close"], length=14)  # 简单移动平均线
-    df['SMA_60'] = ta.sma(df['Close'], length=60)
-    df['SMA_125'] = ta.sma(df['Close'], length=125)
-    df['SMA_186'] = ta.sma(df['Close'], length=186)
-    df["EMA"] = ta.ema(df["Close"], length=14)  # 指数移动平均线
-    df['EMA_60'] = ta.ema(df['Close'], length=60)
-    df['EMA_125'] = ta.ema(df['Close'], length=125)
-    df['EMA_186'] = ta.ema(df['Close'], length=186)
+    df["SMA_14"] = ta.sma(df["Close"], length=14)  # 简单移动平均线
+    df["EMA_7"] = ta.ema(df["Close"], length=7) # 指数移动平均线
+    df["EMA_14"] = ta.ema(df["Close"], length=14)
+    df['EMA_28'] = ta.ema(df['Close'], length=28)
+    df['EMA_56'] = ta.ema(df['Close'], length=56)
+    df['EMA_112'] = ta.ema(df['Close'], length=112)
+    df['EMA_224'] = ta.ema(df['Close'], length=224)
     df["WMA"] = ta.wma(df["Close"], length=14)  # 加权移动平均线
     df["HMA"] = ta.hma(df["Close"], length=14)  # Hull 移动平均线
     df["RMA"] = ta.rma(df["Close"], length=14)  # 指数平滑移动平均线
@@ -77,19 +76,12 @@ def getDf(dataPath,future_days):
     df["OBV"] = ta.obv(df["Close"], df["Volume"])  # 平衡成交量
     df["CMF"] = ta.cmf(df["High"], df["Low"], df["Close"], df["Volume"], length=20)  # 钱德动量摆动
     df["AD"] = ta.ad(df["High"], df["Low"], df["Close"], df["Volume"])  # 累积/分布线
-    df['VOL_SMA_14'] = ta.sma(df['Volume'], length=14)
-    df['VOL_SMA_60'] = ta.sma(df['Volume'], length=60)
-    df['VOL_SMA_125'] = ta.sma(df['Volume'], length=125)
-    df['VOL_SMA_186'] = ta.sma(df['Volume'], length=186)
-    df['VOL_EMA_14'] = ta.ema(df['Volume'], length=14)
-    df['VOL_EMA_60'] = ta.ema(df['Volume'], length=60)
-    df['VOL_EMA_125'] = ta.ema(df['Volume'], length=125)
-    df['VOL_EMA_186'] = ta.ema(df['Volume'], length=186)
-    df['AMOUNT']=df['Volume']*df['Close']#成交额
-    df['AMOUNT_SMA_14'] = ta.sma(df['AMOUNT'], length=14)
-    df['AMOUNT_SMA_60'] = ta.sma(df['AMOUNT'], length=60)
-    df['AMOUNT_SMA_125'] = ta.sma(df['AMOUNT'], length=125)
-    df['AMOUNT_SMA_186'] = ta.sma(df['AMOUNT'], length=186)
+    df["VOL_EMA_7"] = ta.ema(df["Volume"], length=7) # 指数移动平均线
+    df["VOL_EMA_14"] = ta.ema(df["Volume"], length=14)
+    df['VOL_EMA_28'] = ta.ema(df['Volume'], length=28)
+    df['VOL_EMA_56'] = ta.ema(df['Volume'], length=56)
+    df['VOL_EMA_112'] = ta.ema(df['Volume'], length=112)
+    df['VOL_EMA_224'] = ta.ema(df['Volume'], length=224)
 
     ### **统计类 (Statistical Indicators)**
     df["SKEW"] = ta.skew(df["Close"], length=10)  # 偏度

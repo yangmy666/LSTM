@@ -11,15 +11,16 @@ from qqq.v2.data_treat import getDf
 future_days=100
 
 # 读取数据
-df = getDf('C:\py_project\LSTM\stock_data\\TSLA.csv',future_days)
+df = getDf('C:\py_project\LSTM\stock_data\\QQQ.csv',future_days)
 
 # 特征列（使用前一天的数据）
 #ALL
-features = ['DateTime','Month',
-            'Prev_Month', 'Prev_Open', 'Prev_Close', 'Prev_High', 'Prev_Low','Prev_Volume',
+features = ['DateTime','Month','Prev_Month',
+            'Prev_Open', 'Prev_Close', 'Prev_High', 'Prev_Low','Prev_Volume',
             # **均线类 (Moving Averages)**
-            'Prev_SMA', 'Prev_SMA_60', 'Prev_SMA_125', 'Prev_SMA_186',
-            'Prev_EMA', 'Prev_EMA_60', 'Prev_EMA_125', 'Prev_EMA_186',
+            'Prev_SMA_14',
+            'Prev_EMA_7', 'Prev_EMA_14', 'Prev_EMA_28',
+            'Prev_EMA_56','Prev_EMA_112','Prev_EMA_224',
             'Prev_WMA', 'Prev_HMA', 'Prev_RMA',
             # **动量类 (Momentum Indicators)**
             'Prev_RSI', 'Prev_WEEK_RSI', 'Prev_MONTH_RSI',
@@ -36,9 +37,8 @@ features = ['DateTime','Month',
             'Prev_ATR', 'Prev_ATR_RATIO', 'Prev_HVOL',
             # **成交量类 (Volume Indicators)**
             'Prev_VWMA', 'Prev_OBV', 'Prev_CMF', 'Prev_AD',
-            'Prev_VOL_SMA_14', 'Prev_VOL_SMA_60', 'Prev_VOL_SMA_125', 'Prev_VOL_SMA_186',
-            'Prev_VOL_EMA_14', 'Prev_VOL_EMA_60', 'Prev_VOL_EMA_125', 'Prev_VOL_EMA_186',
-            'Prev_AMOUNT', 'Prev_AMOUNT_SMA_14', 'Prev_AMOUNT_SMA_60', 'Prev_AMOUNT_SMA_125', 'Prev_AMOUNT_SMA_186',
+            'Prev_VOL_EMA_7', 'Prev_VOL_EMA_14', 'Prev_VOL_EMA_28',
+            'Prev_VOL_EMA_56', 'Prev_VOL_EMA_112', 'Prev_VOL_EMA_224',
             # **统计类 (Statistical Indicators)**
             'Prev_SKEW', 'Prev_KURT', 'Prev_ZSCORE'
 ]

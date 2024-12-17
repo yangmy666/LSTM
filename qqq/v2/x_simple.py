@@ -14,13 +14,27 @@ future_days=30
 df = getDf('C:\py_project\LSTM\stock_data\\TSLA.csv',future_days)
 
 # 特征列（使用前一天的数据）
-#ALL
-features = ['DateTime','Month','Prev_Month', 'Prev_Open', 'Prev_Close','Prev_Volume',
-            'Prev_SMA','Prev_SMA_125','Prev_SMA_186',
+features = ['DateTime','Month','Prev_Month',
+            'Prev_Open', 'Prev_Close', 'Prev_High', 'Prev_Low','Prev_Volume',
+            # **均线类 (Moving Averages)**
+            'Prev_EMA_7', 'Prev_EMA_14', 'Prev_EMA_28',
+            'Prev_EMA_56','Prev_EMA_112','Prev_EMA_224',
+            # **动量类 (Momentum Indicators)**
+            'Prev_RSI', 'Prev_WEEK_RSI', 'Prev_MONTH_RSI',
+            # **趋势类 (Trend Indicators)**
             'Prev_ADX', 'Prev_DI_PLUS', 'Prev_DI_MINUS',
-            'Prev_RSI','Prev_WEEK_RSI', 'Prev_ATR',
-            'Prev_VOL_SMA_125','Prev_VOL_SMA_186',
+            # **均值回归类 (Mean Reversion Indicators)**
+            'Prev_BB_LOWER', 'Prev_BB_MIDDLE', 'Prev_BB_UPPER', 'Prev_BB_WIDTH', 'Prev_BB_PERCENT',
+            # **波动性类 (Volatility Indicators)**
+            'Prev_ATR',
+            # **成交量类 (Volume Indicators)**
+            'Prev_VOL_EMA_7', 'Prev_VOL_EMA_14', 'Prev_VOL_EMA_28',
+            'Prev_VOL_EMA_56', 'Prev_VOL_EMA_112', 'Prev_VOL_EMA_224',
+            # **统计类 (Statistical Indicators)**
+            'Prev_SKEW', 'Prev_KURT', 'Prev_ZSCORE'
 ]
+
+# features = ['DateTime', 'Prev_Open', 'Prev_Close', 'Prev_High', 'Prev_Low']
 
 # 目标列（预测未来的收盘价）
 target = 'Close'
@@ -30,14 +44,14 @@ X = df[features]
 y = df[target]
 
 # 按时间划分训练集和测试集
-train_size = int(len(df) * 0.8)
+train_size = int(len(df) * 0.97)
 X_train, y_train = X[:train_size] , y[:train_size]
 X_test, y_test = X[train_size:] , y[train_size:]
 df_test=df[train_size:]
 
 # 检查 NaN 或 Infinity
 if y_train.isna().any() or np.isinf(y_train).any():
-    print("训练目标数据中存在 NaN 或 Infinity!")
+    print("标签数据中存在 NaN 或 Infinity!")
 
 # 定义 XGBoost 模型d
 model = xgb.XGBRegressor(objective='reg:squarederror')
@@ -48,7 +62,7 @@ model.fit(X_train, y_train)
 xgb.plot_importance(model, importance_type='weight', max_num_features=len(X.columns))
 plt.show()
 
-print("开始预测-----")
+print("开始滚动预测-----")
 
 # 用来存储预测值
 y_preds = []
