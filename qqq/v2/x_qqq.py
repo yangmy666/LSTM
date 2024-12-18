@@ -15,18 +15,9 @@ df = getDf('C:\py_project\LSTM\stock_data\\QQQ.csv',future_days)
 
 # 特征列（使用前一天的数据）
 #ALL
-features = ['DateTime','Month','Prev_Month',
-            'Prev_Open', 'Prev_Close', 'Prev_High', 'Prev_Low','Prev_Volume',
-            # **均线类 (Moving Averages)**
-            'Prev_EMA_14', 'Prev_EMA_112',
-            # **动量类 (Momentum Indicators)**
-            'Prev_RSI','Prev_WEEK_RSI',
-            # **趋势类 (Trend Indicators)**
-            'Prev_ADX', 'Prev_DI_PLUS', 'Prev_DI_MINUS',
-            # **波动性类 (Volatility Indicators)**
-            'Prev_ATR_RATIO',
-            # **成交量类 (Volume Indicators)**
-            'Prev_VOL_EMA_14', 'Prev_VOL_EMA_112',
+features = ['DateTime','Prev_EMA_56','Prev_EMA_112','Prev_EMA_28','Prev_DC_LOWER',
+'Prev_KC_UPPER','Prev_BB_LOWER', 'Prev_KC_LOWER','Prev_KAMA','Prev_VWMA','Prev_BB_UPPER',
+'Prev_AD',
 ]
 
 # features = ['DateTime', 'Prev_Open', 'Prev_Close', 'Prev_High', 'Prev_Low']
@@ -54,7 +45,7 @@ model = xgb.XGBRegressor(objective='reg:squarederror')
 model.fit(X_train, y_train)
 
 # 绘制特征重要性图
-xgb.plot_importance(model, importance_type='weight', max_num_features=len(X.columns))
+xgb.plot_importance(model, importance_type='gain', max_num_features=len(X.columns))
 plt.show()
 
 print("开始预测-----")
@@ -105,7 +96,7 @@ for i in range(len(X_test)):
         y_train = np.append(y_train, y_current)
 
         # 使用新的训练数据重新训练模型
-        model.fit(X_train, y_train)
+        #model.fit(X_train, y_train)
 
 y_test = y_test.dropna()
 # 计算均方误差

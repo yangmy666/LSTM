@@ -15,10 +15,10 @@ df = getDf('C:\py_project\LSTM\stock_data\\QQQ.csv',future_days)
 
 # 特征列（使用前一天的数据）
 #ALL
-features = ['DateTime','Month','Prev_Month',
+features = ['DateTime','Month','Prev_Month','Bull_Bear',
             'Prev_Open', 'Prev_Close', 'Prev_High', 'Prev_Low','Prev_Volume',
             # **均线类 (Moving Averages)**
-            'Prev_SMA_14',
+            'Prev_SMA_14','Prev_SMA_125','Prev_SMA_186','Prev_Bull_Bear',
             'Prev_EMA_7', 'Prev_EMA_14', 'Prev_EMA_28',
             'Prev_EMA_56','Prev_EMA_112','Prev_EMA_224',
             'Prev_WMA', 'Prev_HMA', 'Prev_RMA',
@@ -37,6 +37,7 @@ features = ['DateTime','Month','Prev_Month',
             'Prev_ATR', 'Prev_ATR_RATIO', 'Prev_HVOL',
             # **成交量类 (Volume Indicators)**
             'Prev_VWMA', 'Prev_OBV', 'Prev_CMF', 'Prev_AD',
+            'Prev_VOL_SMA_14', 'Prev_VOL_SMA_125',
             'Prev_VOL_EMA_7', 'Prev_VOL_EMA_14', 'Prev_VOL_EMA_28',
             'Prev_VOL_EMA_56', 'Prev_VOL_EMA_112', 'Prev_VOL_EMA_224',
             # **统计类 (Statistical Indicators)**
@@ -68,7 +69,7 @@ model = xgb.XGBRegressor(objective='reg:squarederror')
 model.fit(X_train, y_train)
 
 # 绘制特征重要性图
-xgb.plot_importance(model, importance_type='weight', max_num_features=len(X.columns))
+xgb.plot_importance(model, importance_type='gain', max_num_features=len(X.columns))
 plt.show()
 
 print("开始预测-----")

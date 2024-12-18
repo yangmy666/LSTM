@@ -12,7 +12,7 @@ future_days=30
 #根据最近几天的特征来预测
 num_prev_days=30
 #训练集比例
-train_scale=0.8
+train_scale=0.9
 #是否滚动预测？
 roll= False
 
@@ -33,9 +33,10 @@ features = ['Open', 'Close', 'Volume',
             # **成交量类 (Volume Indicators)**
             'VOL_SMA_14', 'VOL_SMA_125',
 ]
+
 # features = ['Open', 'Close', 'High', 'Low', 'Volume',
 #             # **均线类 (Moving Averages)**
-#             'SMA_14',
+#             'SMA_14','SMA_125','SMA_186','Bull_Bear',
 #             'EMA_7', 'EMA_14', 'EMA_28',
 #             'EMA_56', 'EMA_112', 'EMA_224',
 #             'WMA', 'HMA', 'RMA',
@@ -54,11 +55,13 @@ features = ['Open', 'Close', 'Volume',
 #             'ATR', 'ATR_RATIO', 'HVOL',
 #             # **成交量类 (Volume Indicators)**
 #             'VWMA', 'OBV', 'CMF', 'AD',
+#             'VOL_SMA_14', 'VOL_SMA_125',
 #             'VOL_EMA_7', 'VOL_EMA_14', 'VOL_EMA_28',
 #             'VOL_EMA_56', 'VOL_EMA_112', 'VOL_EMA_224',
 #             # **统计类 (Statistical Indicators)**
 #             'SKEW', 'KURT', 'ZSCORE'
 # ]
+
 # 动态生成特征列
 features = generate_feature_columns(features, num_prev_days)
 features.extend(['DateTime',])
@@ -82,11 +85,45 @@ df_test = df[train_size:]
 if y_train.isna().any() or np.isinf(y_train).any():
     print("标签数据中存在 NaN 或 Infinity!")
 
-# 定义 XGBoost 模型d
-model = xgb.XGBRegressor(objective='reg:squarederror')
-# 训练模型
+# XGBoost参数配置
+params = {
+    'objective': 'reg:squarederror',  # 适用于回归问题，二分类可以用'binary:logistic'
+    'booster': 'gbtree',  # 使用树模型
+    'eval_metric': 'rmse',  # 评估指标，这里使用均方根误差
+    'learning_rate': 0.01,  # 学习率 (较低的学习率通常更精确，但需要更多树)
+    # 'n_estimators': 1000,  # 最大树的数量
+    'max_depth': 10,  # 树的最大深度
+    'min_child_weight': 1,  # 叶节点最小权重
+    'gamma': 0,  # 控制分裂的复杂度
+    'subsample': 0.9,  # 每棵树训练时使用数据的比例
+    'colsample_bytree': 0.9,  # 每棵树训练时使用特征的比例
+    'lambda': 1,  # L2正则化项
+    'alpha': 0,  # L1正则化项
+    'scale_pos_weight': 1,  # 类别不平衡时调整
+    # 'early_stopping_rounds': 50,  # 早停策略，如果验证集上的错误50轮没有改善，则停止训练
+    'tree_method': 'hist',  # 使用 CPU/GPU 通用的 hist 方法
+    'device': 'cuda',       # 明确指定使用 CUDA 设备（GPU）
+    # 'predictor': 'gpu_predictor'  # 使用GPU加速进行预测
+}
+
+# 删除 y_test 中的 NaN 行，同时删除 X_test 中对应的行
+valid_rows = y_test.dropna().index
+X_test_cleaned = X_test.loc[valid_rows]
+y_test_cleaned = y_test.loc[valid_rows]
+# 创建 DMatrix 对象
+dtrain = xgb.DMatrix(X_train, label=y_train)
+dtest = xgb.DMatrix(X_test_cleaned, label=y_test_cleaned)
+# 设置 eval_set 以启用早停
+evals = [(dtrain, 'train'), (dtest, 'eval')]
+# 定义 XGBoost 模型,训练模型，指定验证集
 print("开始训练-----")
-model.fit(X_train, y_train)
+model = xgb.train(
+    params=params,
+    dtrain=dtrain,
+    num_boost_round=1000,  # 设置训练的轮数
+    evals=evals,  # 设置验证集
+    early_stopping_rounds=50  # 设置提前停止的轮数
+)
 
 # 绘制特征重要性图
 xgb.plot_importance(model,importance_type='gain',max_num_features=10)
@@ -103,9 +140,10 @@ k_test = pd.DataFrame(columns=['Date', 'Open', 'Close', 'High', 'Low', 'Volume',
 for i in range(len(X_test)):
     # 获取当前时刻的测试特征
     X_current = X_test.iloc[i:i + 1]
-
+    # 转换成DMatrix
+    d_X_current = xgb.DMatrix(X_current)
     # 使用模型进行预测目标
-    y_pred = model.predict(X_current)
+    y_pred = model.predict(d_X_current)
 
     # 获取当前的测试数据
     df_current = df_test.iloc[i:i + 1]
