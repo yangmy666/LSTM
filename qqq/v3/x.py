@@ -5,42 +5,63 @@ import pandas as pd
 import xgboost as xgb
 from sklearn.metrics import mean_squared_error
 
-from qqq.v3.data_treat import getDf
+from qqq.v3.data_treat import getDf, generate_feature_columns
 
 #预测未来第几天
-future_days=5
+future_days=30
+#根据最近几天的特征来预测
+num_prev_days=30
+#训练集比例
+train_scale=0.8
+#是否滚动预测？
+roll= False
 
 # 读取数据
-df = getDf('C:\py_project\LSTM\stock_data\\QQQ.csv',future_days)
+df = getDf('C:\py_project\LSTM\stock_data\\QQQ.csv',future_days,num_prev_days)
 
 # 特征列（使用前一天的数据）
-features = ['DateTime','Month','Prev_Month',
-            'Prev_Open', 'Prev_Close', 'Prev_High', 'Prev_Low','Prev_Volume',
+# 传入的特征列应该没有 'Prev_' 前缀
+features = ['Open', 'Close', 'Volume',
             # **均线类 (Moving Averages)**
-            'Prev_SMA_14',
-            'Prev_EMA_7', 'Prev_EMA_14', 'Prev_EMA_28',
-            'Prev_EMA_56','Prev_EMA_112','Prev_EMA_224',
-            'Prev_WMA', 'Prev_HMA', 'Prev_RMA',
+            'SMA_14','SMA_125','Bull_Bear',
             # **动量类 (Momentum Indicators)**
-            'Prev_RSI', 'Prev_WEEK_RSI', 'Prev_MONTH_RSI',
-            'Prev_KAMA', 'Prev_MACD', 'Prev_SIGNAL', 'Prev_HIST',
-            'Prev_MOM', 'Prev_ROC',
-            'Prev_WILLR', 'Prev_CCI',
+            'RSI', 'WEEK_RSI',
             # **趋势类 (Trend Indicators)**
-            'Prev_ADX', 'Prev_DI_PLUS', 'Prev_DI_MINUS',
-            # **均值回归类 (Mean Reversion Indicators)**
-            'Prev_BB_LOWER', 'Prev_BB_MIDDLE', 'Prev_BB_UPPER', 'Prev_BB_WIDTH', 'Prev_BB_PERCENT',
-            'Prev_KC_LOWER', 'Prev_KC_MIDDLE', 'Prev_KC_UPPER',
-            'Prev_DC_LOWER', 'Prev_DC_MIDDLE', 'Prev_DC_UPPER',
+            'ADX', 'DI_PLUS', 'DI_MINUS',
             # **波动性类 (Volatility Indicators)**
-            'Prev_ATR', 'Prev_ATR_RATIO', 'Prev_HVOL',
+            'ATR_RATIO',
             # **成交量类 (Volume Indicators)**
-            'Prev_VWMA', 'Prev_OBV', 'Prev_CMF', 'Prev_AD',
-            'Prev_VOL_EMA_7', 'Prev_VOL_EMA_14', 'Prev_VOL_EMA_28',
-            'Prev_VOL_EMA_56', 'Prev_VOL_EMA_112', 'Prev_VOL_EMA_224',
-            # **统计类 (Statistical Indicators)**
-            'Prev_SKEW', 'Prev_KURT', 'Prev_ZSCORE'
+            'VOL_SMA_14', 'VOL_SMA_125',
 ]
+# features = ['Open', 'Close', 'High', 'Low', 'Volume',
+#             # **均线类 (Moving Averages)**
+#             'SMA_14',
+#             'EMA_7', 'EMA_14', 'EMA_28',
+#             'EMA_56', 'EMA_112', 'EMA_224',
+#             'WMA', 'HMA', 'RMA',
+#             # **动量类 (Momentum Indicators)**
+#             'RSI', 'WEEK_RSI', 'MONTH_RSI',
+#             'KAMA', 'MACD', 'SIGNAL', 'HIST',
+#             'MOM', 'ROC',
+#             'WILLR', 'CCI',
+#             # **趋势类 (Trend Indicators)**
+#             'ADX', 'DI_PLUS', 'DI_MINUS',
+#             # **均值回归类 (Mean Reversion Indicators)**
+#             'BB_LOWER', 'BB_MIDDLE', 'BB_UPPER', 'BB_WIDTH', 'BB_PERCENT',
+#             'KC_LOWER', 'KC_MIDDLE', 'KC_UPPER',
+#             'DC_LOWER', 'DC_MIDDLE', 'DC_UPPER',
+#             # **波动性类 (Volatility Indicators)**
+#             'ATR', 'ATR_RATIO', 'HVOL',
+#             # **成交量类 (Volume Indicators)**
+#             'VWMA', 'OBV', 'CMF', 'AD',
+#             'VOL_EMA_7', 'VOL_EMA_14', 'VOL_EMA_28',
+#             'VOL_EMA_56', 'VOL_EMA_112', 'VOL_EMA_224',
+#             # **统计类 (Statistical Indicators)**
+#             'SKEW', 'KURT', 'ZSCORE'
+# ]
+# 动态生成特征列
+features = generate_feature_columns(features, num_prev_days)
+features.extend(['DateTime',])
 
 # features = ['DateTime', 'Prev_Open', 'Prev_Close', 'Prev_High', 'Prev_Low']
 
@@ -51,11 +72,11 @@ target = 'Close'
 X = df[features]
 y = df[target]
 
-# 按时间划分训练集和测试集
-train_size = int(len(df) * 0.99)
-X_train, y_train = X[:train_size] , y[:train_size]
-X_test, y_test = X[train_size:] , y[train_size:]
-df_test=df[train_size:]
+# 确定训练集和测试集大小
+train_size = int(len(df) * train_scale)
+X_train, y_train = X[:train_size], y[:train_size]
+X_test, y_test = X[train_size:], y[train_size:]
+df_test = df[train_size:]
 
 # 检查 NaN 或 Infinity
 if y_train.isna().any() or np.isinf(y_train).any():
@@ -64,13 +85,14 @@ if y_train.isna().any() or np.isinf(y_train).any():
 # 定义 XGBoost 模型d
 model = xgb.XGBRegressor(objective='reg:squarederror')
 # 训练模型
+print("开始训练-----")
 model.fit(X_train, y_train)
 
 # 绘制特征重要性图
-xgb.plot_importance(model, importance_type='weight', max_num_features=len(X.columns))
+xgb.plot_importance(model,importance_type='gain',max_num_features=10)
 plt.show()
 
-print("开始预测-----")
+print("开始测试-----")
 
 # 用来存储预测值
 y_preds = []
@@ -118,7 +140,9 @@ for i in range(len(X_test)):
         y_train = np.append(y_train, y_current)
 
         # 使用新的训练数据重新训练模型
-        #model.fit(X_train, y_train)
+        if roll:
+            print('滚动预测添加新数据训练')
+            model.fit(X_train, y_train)
 
 y_test = y_test.dropna()
 # 计算均方误差

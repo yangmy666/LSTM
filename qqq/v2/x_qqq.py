@@ -8,17 +8,17 @@ from sklearn.metrics import mean_squared_error
 from qqq.v2.data_treat import getDf
 
 #预测未来第几天
-future_days=5
+future_days=30
 
 # 读取数据
 df = getDf('C:\py_project\LSTM\stock_data\\QQQ.csv',future_days)
 
 # 特征列（使用前一天的数据）
 #ALL
-features = ['DateTime',
-            'Prev_Close',
+features = ['DateTime','Month','Prev_Month',
+            'Prev_Open', 'Prev_Close', 'Prev_High', 'Prev_Low','Prev_Volume',
             # **均线类 (Moving Averages)**
-            'Prev_Distance_SMA_125',
+            'Prev_EMA_14', 'Prev_EMA_112',
             # **动量类 (Momentum Indicators)**
             'Prev_RSI','Prev_WEEK_RSI',
             # **趋势类 (Trend Indicators)**
@@ -26,7 +26,7 @@ features = ['DateTime',
             # **波动性类 (Volatility Indicators)**
             'Prev_ATR_RATIO',
             # **成交量类 (Volume Indicators)**
-            'Prev_Distance_VOL_SMA_125',
+            'Prev_VOL_EMA_14', 'Prev_VOL_EMA_112',
 ]
 
 # features = ['DateTime', 'Prev_Open', 'Prev_Close', 'Prev_High', 'Prev_Low']
@@ -39,7 +39,7 @@ X = df[features]
 y = df[target]
 
 # 按时间划分训练集和测试集
-train_size = int(len(df) * 0.99)
+train_size = int(len(df) * 0.97)
 X_train, y_train = X[:train_size] , y[:train_size]
 X_test, y_test = X[train_size:] , y[train_size:]
 df_test=df[train_size:]

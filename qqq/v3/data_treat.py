@@ -2,7 +2,18 @@ import numpy as np
 import pandas as pd
 import pandas_ta as ta
 
-def getDf(dataPath,future_days):
+# 生成特征列的函数，根据num_prev_days动态生成Prev_*列
+def generate_feature_columns(features, num_prev_days):
+    all_feature_columns = []
+
+    # 遍历所有特征列
+    for feature in features:
+        # 对于每个没有 'Prev_' 前缀的特征列，生成多个Prev_*列
+        for i in range(1, num_prev_days + 1):
+            all_feature_columns.append(f'Prev_{i}_{feature}')  # 生成 Prev_1_*，Prev_2_*，... 列
+    return all_feature_columns
+
+def getDf(dataPath, future_days, num_prev_days):
     # 读取数据
     df = pd.read_csv(dataPath)
 
@@ -13,70 +24,75 @@ def getDf(dataPath,future_days):
     df['Month'] = df['Date'].dt.month
 
     ### **趋势类 (MA Indicators)**
-    df["SMA_14"] = ta.sma(df["Close"], length=14)  # 简单移动平均线
-    df["EMA_7"] = ta.ema(df["Close"], length=7) # 指数移动平均线
+    df["SMA_14"] = ta.sma(df["Close"], length=14)
+    df["SMA_125"] = ta.sma(df["Close"], length=125)
+    df["SMA_186"] = ta.sma(df["Close"], length=186)
+    df['Bull_Bear'] = (df['Close'] > df['SMA_186']).astype(int)
+    df["EMA_7"] = ta.ema(df["Close"], length=7)
     df["EMA_14"] = ta.ema(df["Close"], length=14)
     df['EMA_28'] = ta.ema(df['Close'], length=28)
     df['EMA_56'] = ta.ema(df['Close'], length=56)
     df['EMA_112'] = ta.ema(df['Close'], length=112)
     df['EMA_224'] = ta.ema(df['Close'], length=224)
-    df["WMA"] = ta.wma(df["Close"], length=14)  # 加权移动平均线
-    df["HMA"] = ta.hma(df["Close"], length=14)  # Hull 移动平均线
-    df["RMA"] = ta.rma(df["Close"], length=14)  # 指数平滑移动平均线
-    adx_df = ta.adx(df["High"], df["Low"], df["Close"], length=14)  # 平均方向指数
-    df["ADX"] = adx_df["ADX_14"]  # 平均方向指数
-    df["DI_PLUS"] = adx_df["DMP_14"]  # 正方向指标 (+DI)
-    df["DI_MINUS"] = adx_df["DMN_14"]  # 负方向指标 (-DI)
-    df["KAMA"] = ta.kama(df["Close"], length=10)  # 自适应均线
-    macd = df.ta.macd(close='Close', fast=12, slow=26, signal=9)#MACD
-    df['MACD'] = macd['MACD_12_26_9']# 获取 MACD 数值
-    df['SIGNAL'] = macd['MACDh_12_26_9']# 获取 SIGNAL 数值
-    df['HIST'] = macd['MACDs_12_26_9']# 获取 HIST 数值
+    df["WMA"] = ta.wma(df["Close"], length=14)
+    df["HMA"] = ta.hma(df["Close"], length=14)
+    df["RMA"] = ta.rma(df["Close"], length=14)
+    adx_df = ta.adx(df["High"], df["Low"], df["Close"], length=14)
+    df["ADX"] = adx_df["ADX_14"]
+    df["DI_PLUS"] = adx_df["DMP_14"]
+    df["DI_MINUS"] = adx_df["DMN_14"]
+    df["KAMA"] = ta.kama(df["Close"], length=10)
+    macd = df.ta.macd(close='Close', fast=12, slow=26, signal=9)
+    df['MACD'] = macd['MACD_12_26_9']
+    df['SIGNAL'] = macd['MACDh_12_26_9']
+    df['HIST'] = macd['MACDs_12_26_9']
 
     ### **动量类 (Momentum Indicators)**
-    df["RSI"] = ta.rsi(df["Close"], length=14)  # RSI
-    weekly_df = df.groupby(pd.Grouper(key='Date', freq='W')).last()# 按周分组，获取每周最后一个交易日的收盘价
-    weekly_df['WEEK_RSI'] = ta.rsi(weekly_df['Close'], length=14)# 计算周RSI（周期为14）
+    df["RSI"] = ta.rsi(df["Close"], length=14)
+    weekly_df = df.groupby(pd.Grouper(key='Date', freq='W')).last()
+    weekly_df['WEEK_RSI'] = ta.rsi(weekly_df['Close'], length=14)
     df['WEEK_RSI'] = df['Date'].apply(
         lambda x: weekly_df.loc[weekly_df.index <= x, 'WEEK_RSI'].iloc[-1] if not weekly_df.loc[
             weekly_df.index <= x, 'WEEK_RSI'].empty else None
-    )# 创建一个新的列 WEEK_RSI，并将周RSI的值对齐到原始数据
-    df['WEEK_RSI'] = df['WEEK_RSI'].ffill() # 对 NaN 值进行前向填充 ， 使用 ffill() 进行前向填充
-    monthly_df = df.groupby(pd.Grouper(key='Date', freq='M')).last()# 按月重新采样数据，取每月最后一个交易日的收盘价
-    monthly_df['MONTH_RSI'] = ta.rsi(monthly_df['Close'], length=14)# 计算月RSI，pandas_ta 库默认周期为14
+    )
+    df['WEEK_RSI'] = df['WEEK_RSI'].ffill()
+    monthly_df = df.groupby(pd.Grouper(key='Date', freq='M')).last()
+    monthly_df['MONTH_RSI'] = ta.rsi(monthly_df['Close'], length=14)
     df['MONTH_RSI'] = df['Date'].apply(
         lambda x: monthly_df.loc[monthly_df.index <= x, 'MONTH_RSI'].iloc[-1] if not monthly_df.loc[
             monthly_df.index <= x, 'MONTH_RSI'].empty else None
-    )# 创建一个新的列 'MONTH_RSI'，并将月RSI的值对齐到原始数据
-    df['MONTH_RSI'] = df['MONTH_RSI'].ffill()# 对 NaN 值进行前向填充
-    # df["STOCH_K"], df["STOCH_D"] = ta.stoch(df["High"], df["Low"], df["Close"])  # 随机指标
-    df["WILLR"] = ta.willr(df["High"], df["Low"], df["Close"], length=14)  # 威廉指标
-    df["CCI"] = ta.cci(df["High"], df["Low"], df["Close"], length=14)  # 商品通道指数
-    df["MOM"] = ta.mom(df["Close"], length=10)  # 动量指标
-    df["ROC"] = ta.roc(df["Close"], length=10)  # 价格变化率
+    )
+    df['MONTH_RSI'] = df['MONTH_RSI'].ffill()
+
+    df["WILLR"] = ta.willr(df["High"], df["Low"], df["Close"], length=14)
+    df["CCI"] = ta.cci(df["High"], df["Low"], df["Close"], length=14)
+    df["MOM"] = ta.mom(df["Close"], length=10)
+    df["ROC"] = ta.roc(df["Close"], length=10)
 
     ### **均值回归类 (Mean Reversion Indicators)**
-    bbands_df = ta.bbands(df["Close"])  # 布林带
+    bbands_df = ta.bbands(df["Close"])
     df["BB_LOWER"], df["BB_MIDDLE"], df["BB_UPPER"], df["BB_WIDTH"], df["BB_PERCENT"] = \
         bbands_df["BBL_5_2.0"], bbands_df["BBM_5_2.0"], bbands_df["BBU_5_2.0"], bbands_df["BBB_5_2.0"], bbands_df[
             "BBP_5_2.0"]
-    kc_df = ta.kc(df["High"], df["Low"], df["Close"])  # 凯尔特通道
+    kc_df = ta.kc(df["High"], df["Low"], df["Close"])
     df["KC_LOWER"], df["KC_MIDDLE"], df["KC_UPPER"] = kc_df["KCLe_20_2"], kc_df["KCBe_20_2"], kc_df["KCUe_20_2"]
-    donchian_df = ta.donchian(df["High"], df["Low"], length=20)  # 唐奇安通道
+    donchian_df = ta.donchian(df["High"], df["Low"], length=20)
     df["DC_LOWER"], df["DC_MIDDLE"], df["DC_UPPER"] = \
         donchian_df["DCL_20_20"], donchian_df["DCM_20_20"], donchian_df["DCU_20_20"]
 
     ### **波动性类 (Volatility Indicators)**
-    df["ATR"] = ta.atr(df["High"], df["Low"], df["Close"], length=14)  # 平均真实波幅
+    df["ATR"] = ta.atr(df["High"], df["Low"], df["Close"], length=14)
     df['ATR_RATIO'] = df['ATR'] / df['Close']
-    df["HVOL"] = ta.pvol(df["Close"], df["Volume"], length=20)  # 历史波动率
+    df["HVOL"] = ta.pvol(df["Close"], df["Volume"], length=20)
 
     ### **成交量类 (Volume Indicators)**
-    df["VWMA"] = ta.vwma(df["Close"], df["Volume"], length=14)  # 成交量加权移动平均线
-    df["OBV"] = ta.obv(df["Close"], df["Volume"])  # 平衡成交量
-    df["CMF"] = ta.cmf(df["High"], df["Low"], df["Close"], df["Volume"], length=20)  # 钱德动量摆动
-    df["AD"] = ta.ad(df["High"], df["Low"], df["Close"], df["Volume"])  # 累积/分布线
-    df["VOL_EMA_7"] = ta.ema(df["Volume"], length=7) # 指数移动平均线
+    df["VWMA"] = ta.vwma(df["Close"], df["Volume"], length=14)
+    df["OBV"] = ta.obv(df["Close"], df["Volume"])
+    df["CMF"] = ta.cmf(df["High"], df["Low"], df["Close"], df["Volume"], length=20)
+    df["AD"] = ta.ad(df["High"], df["Low"], df["Close"], df["Volume"])
+    df["VOL_SMA_14"] = ta.sma(df["Volume"], length=14)
+    df["VOL_SMA_125"] = ta.sma(df["Volume"], length=125)
+    df["VOL_EMA_7"] = ta.ema(df["Volume"], length=7)
     df["VOL_EMA_14"] = ta.ema(df["Volume"], length=14)
     df['VOL_EMA_28'] = ta.ema(df['Volume'], length=28)
     df['VOL_EMA_56'] = ta.ema(df['Volume'], length=56)
@@ -84,18 +100,21 @@ def getDf(dataPath,future_days):
     df['VOL_EMA_224'] = ta.ema(df['Volume'], length=224)
 
     ### **统计类 (Statistical Indicators)**
-    df["SKEW"] = ta.skew(df["Close"], length=10)  # 偏度
-    df["KURT"] = df["Close"].kurtosis()  # 峰度
-    df["ZSCORE"] = ta.zscore(df["Close"], length=20)  # Z 分数
+    df["SKEW"] = ta.skew(df["Close"], length=10)
+    df["KURT"] = df["Close"].kurtosis()
+    df["ZSCORE"] = ta.zscore(df["Close"], length=20)
 
     # Prev_需要排除的列名（比如日期列等）
     exclude_columns = ['Date', 'DateTime']  # 根据实际情况修改
+
     # 创建一个空字典，用于存储所有Prev_列
     prev_columns = {}
-    # 遍历 df 的列并生成 Prev_ 列
-    for column in df.columns:
-        if column not in exclude_columns:
-            prev_columns[f'Prev_{column}'] = df[column].shift(future_days)
+
+    # 遍历 num_prev_days 来生成 Prev_* 列
+    for i in range(1, num_prev_days + 1):
+        for column in df.columns:
+            if column not in exclude_columns and not column.startswith('Prev_'):
+                prev_columns[f'Prev_{i}_{column}'] = df[column].shift(future_days + (i - 1))
 
     # 使用 pd.concat 一次性将所有 Prev_ 列添加到原 DataFrame
     df = pd.concat([df, pd.DataFrame(prev_columns)], axis=1)
@@ -122,11 +141,11 @@ def getDf(dataPath,future_days):
             'DateTime': (next_date - df_min) / np.timedelta64(1, 'D'),
         }
 
-        # 遍历 DataFrame 的所有列
-        for column in df.columns:
-            # 排除以 'Prev_' 开头的列和 exclude_columns 中的列
-            if not column.startswith('Prev_') and column not in exclude_columns:
-                new_row[f'Prev_{column}'] = df[column].iloc[-future_days]
+        # 为新行生成 Prev_* 列，但只生成需要的列，并避免重复生成
+        for i in range(1, num_prev_days + 1):
+            for column in df.columns:
+                if column not in exclude_columns and not column.startswith('Prev_'):
+                    new_row[f'Prev_{i}_{column}'] = df[column].iloc[-(future_days + (i - 1))]
 
         # 创建新行数据框并添加到原数据框中
         new_row_df = pd.DataFrame([new_row])
@@ -145,3 +164,8 @@ def getDf(dataPath,future_days):
     print(df.tail(future_days+1))
 
     return df
+
+
+
+
+
