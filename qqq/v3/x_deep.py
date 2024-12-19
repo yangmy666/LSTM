@@ -227,13 +227,3 @@ mpf.plot(k_test, type='candle', style='charles', title='K-line Chart', ylabel='P
 # 显示图形
 plt.show()
 
-# #y_preds=model.predict(X_test)
-# # 可视化预测结果与真实值
-# plt.figure(figsize=(10, 6))
-# plt.plot(y_test.values, label='Actual', color='blue')
-# plt.plot(y_preds, label='Predicted', color='red')
-# plt.title('Stock Price Prediction (Actual vs Predicted)')
-# plt.xlabel('Sample Index')
-# plt.ylabel('Stock Close Price')
-# plt.legend()
-# plt.show()
