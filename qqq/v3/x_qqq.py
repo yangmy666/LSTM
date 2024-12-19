@@ -143,7 +143,7 @@ for i in range(len(X_test)):
 
         # 使用新的训练数据重新训练模型
         if roll:
-            print(f'滚动预测添加新数据训练: {date:.2f}')
+            print(date.strftime('%Y-%m-%d'))
             model.fit(X_train, y_train)
 
 y_test = y_test.dropna()
