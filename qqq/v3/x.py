@@ -21,52 +21,50 @@ df = getDf('C:\py_project\LSTM\stock_data\\QQQ.csv',future_days,num_prev_days)
 
 # 特征列（使用前一天的数据）
 # 传入的特征列应该没有 'Prev_' 前缀
-features = ['Open', 'Close', 'Volume',
-            # **均线类 (Moving Averages)**
-            'SMA_14','SMA_125','Bull_Bear',
-            # **动量类 (Momentum Indicators)**
-            'RSI', 'WEEK_RSI',
-            # **趋势类 (Trend Indicators)**
-            'ADX', 'DI_PLUS', 'DI_MINUS',
-            # **波动性类 (Volatility Indicators)**
-            'ATR_RATIO',
-            # **成交量类 (Volume Indicators)**
-            'VOL_SMA_14', 'VOL_SMA_125',
-]
-
-# features = ['Open', 'Close', 'High', 'Low', 'Volume',
+# features = ['DateTime', 'Prev_Open', 'Prev_Close', 'Prev_High', 'Prev_Low']
+# features = ['Open', 'Close', 'Volume',
 #             # **均线类 (Moving Averages)**
-#             'SMA_14','SMA_125','SMA_186','Bull_Bear',
-#             'EMA_7', 'EMA_14', 'EMA_28',
-#             'EMA_56', 'EMA_112', 'EMA_224',
-#             'WMA', 'HMA', 'RMA',
+#             'SMA_14','SMA_125','Bull_Bear',
 #             # **动量类 (Momentum Indicators)**
-#             'RSI', 'WEEK_RSI', 'MONTH_RSI',
-#             'KAMA', 'MACD', 'SIGNAL', 'HIST',
-#             'MOM', 'ROC',
-#             'WILLR', 'CCI',
+#             'RSI', 'WEEK_RSI',
 #             # **趋势类 (Trend Indicators)**
 #             'ADX', 'DI_PLUS', 'DI_MINUS',
-#             # **均值回归类 (Mean Reversion Indicators)**
-#             'BB_LOWER', 'BB_MIDDLE', 'BB_UPPER', 'BB_WIDTH', 'BB_PERCENT',
-#             'KC_LOWER', 'KC_MIDDLE', 'KC_UPPER',
-#             'DC_LOWER', 'DC_MIDDLE', 'DC_UPPER',
 #             # **波动性类 (Volatility Indicators)**
-#             'ATR', 'ATR_RATIO', 'HVOL',
+#             'ATR_RATIO',
 #             # **成交量类 (Volume Indicators)**
-#             'VWMA', 'OBV', 'CMF', 'AD',
 #             'VOL_SMA_14', 'VOL_SMA_125',
-#             'VOL_EMA_7', 'VOL_EMA_14', 'VOL_EMA_28',
-#             'VOL_EMA_56', 'VOL_EMA_112', 'VOL_EMA_224',
-#             # **统计类 (Statistical Indicators)**
-#             'SKEW', 'KURT', 'ZSCORE'
 # ]
+features = ['Open', 'Close', 'High', 'Low', 'Volume','Month',
+            # **均线类 (Moving Averages)**
+            'SMA_14','SMA_125','SMA_186','Bull_Bear',
+            'EMA_7', 'EMA_14', 'EMA_28',
+            'EMA_56', 'EMA_112', 'EMA_224',
+            'WMA', 'HMA', 'RMA',
+            # **动量类 (Momentum Indicators)**
+            'RSI', 'WEEK_RSI', 'MONTH_RSI',
+            'KAMA', 'MACD', 'SIGNAL', 'HIST',
+            'MOM', 'ROC',
+            'WILLR', 'CCI',
+            # **趋势类 (Trend Indicators)**
+            'ADX', 'DI_PLUS', 'DI_MINUS',
+            # **均值回归类 (Mean Reversion Indicators)**
+            'BB_LOWER', 'BB_MIDDLE', 'BB_UPPER', 'BB_WIDTH', 'BB_PERCENT',
+            'KC_LOWER', 'KC_MIDDLE', 'KC_UPPER',
+            'DC_LOWER', 'DC_MIDDLE', 'DC_UPPER',
+            # **波动性类 (Volatility Indicators)**
+            'ATR', 'ATR_RATIO', 'HVOL',
+            # **成交量类 (Volume Indicators)**
+            'VWMA', 'OBV', 'CMF', 'AD',
+            'VOL_SMA_14', 'VOL_SMA_125',
+            'VOL_EMA_7', 'VOL_EMA_14', 'VOL_EMA_28',
+            'VOL_EMA_56', 'VOL_EMA_112', 'VOL_EMA_224',
+            # **统计类 (Statistical Indicators)**
+            'SKEW', 'KURT', 'ZSCORE'
+]
 
 # 动态生成特征列
 features = generate_feature_columns(features, num_prev_days)
 features.extend(['DateTime',])
-
-# features = ['DateTime', 'Prev_Open', 'Prev_Close', 'Prev_High', 'Prev_Low']
 
 # 目标列（预测未来的收盘价）
 target = 'Close'
@@ -92,7 +90,7 @@ params = {
     'eval_metric': 'rmse',  # 评估指标，这里使用均方根误差
     'learning_rate': 0.01,  # 学习率 (较低的学习率通常更精确，但需要更多树)
     # 'n_estimators': 1000,  # 最大树的数量
-    'max_depth': 10,  # 树的最大深度
+    'max_depth': 1000,  # 树的最大深度
     'min_child_weight': 1,  # 叶节点最小权重
     'gamma': 0,  # 控制分裂的复杂度
     'subsample': 0.9,  # 每棵树训练时使用数据的比例
@@ -120,14 +118,15 @@ print("开始训练-----")
 model = xgb.train(
     params=params,
     dtrain=dtrain,
-    num_boost_round=1000,  # 设置训练的轮数
+    num_boost_round=100000,  # 设置训练的轮数
     evals=evals,  # 设置验证集
     early_stopping_rounds=50  # 设置提前停止的轮数
 )
-
+# 保存模型
+model.save_model('C:\py_project\LSTM\model\\xgb_model.json')
 # 绘制特征重要性图
-xgb.plot_importance(model,importance_type='gain',max_num_features=10)
-plt.show()
+# xgb.plot_importance(model,importance_type='gain',max_num_features=10)
+# plt.show()
 
 print("开始测试-----")
 
