@@ -8,7 +8,7 @@ from sklearn.metrics import mean_squared_error
 from qqq.v3.data_treat import getDf, generate_feature_columns
 
 #预测未来第几天
-future_days=30
+future_days=10
 #根据最近几天的特征来预测
 num_prev_days=30
 #训练集比例
@@ -131,18 +131,19 @@ for i in range(future_days-1,len(X_test)):
         # 将数据添加到 k_test 中
         k_test.loc[len(k_test)] = [date, open_, close, high, low, volume, y_pred[0]]
 
-    # 将future_days-1天前的最新真实数据和目标值添加到训练集
-    # 为什么用future_days-1天前的而不是当前的？如果用当前的就泄露未来数据了
-    X_train_last = X_test.iloc[i - future_days + 1:i - future_days + 2]
-    y_train_last = y_test.iloc[i - future_days + 1:i - future_days + 2]
-    X_train = pd.concat([X_train, X_train_last], ignore_index=True)
-    y_train = np.append(y_train, y_train_last)
-
     # 使用最新的训练数据重新训练模型
     if i<len(X_test)-1:
+        # 将future_days-1天前的最新真实数据和目标值添加到训练集
+        # 为什么用future_days-1天前的而不是当前的？如果用当前的就泄露未来数据了
+        X_train_last = X_test.iloc[i - future_days + 1:i - future_days + 2]
+        y_train_last = y_test.iloc[i - future_days + 1:i - future_days + 2]
+        X_train = pd.concat([X_train, X_train_last], ignore_index=True)
+        y_train = np.append(y_train, y_train_last)
+
         df_train_last = df_test.iloc[i - future_days + 1:i - future_days + 2]
         train_last_date = pd.to_datetime(df_train_last['Date'].values[0])  # 强制转换为 datetime 类型
         print(train_last_date.strftime('%Y-%m-%d'))
+
         model.fit(X_train, y_train)
 
 y_test = y_test.dropna().iloc[future_days-1:]

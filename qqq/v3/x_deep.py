@@ -13,6 +13,31 @@ future_days=30
 num_prev_days=30
 #训练集比例
 train_scale=0.7
+e_train_scale=0.8
+# XGBoost参数配置
+params = {
+    'objective': 'reg:squarederror',  # 适用于回归问题，二分类可以用'binary:logistic'
+    'booster': 'gbtree',  # 使用树模型
+    'eval_metric': 'rmse',  # 评估指标，这里使用均方根误差
+    'learning_rate': 0.01,  # 学习率 (较低的学习率通常更精确，但需要更多树)
+    # 'n_estimators': 1000,  # 最大树的数量
+    'max_depth': 10,  # 树的最大深度
+    'min_child_weight': 1,  # 叶节点最小权重
+    'gamma': 0,  # 控制分裂的复杂度
+    'subsample': 0.9,  # 每棵树训练时使用数据的比例
+    'colsample_bytree': 0.9,  # 每棵树训练时使用特征的比例
+    'lambda': 1,  # L2正则化项
+    'alpha': 0,  # L1正则化项
+    'scale_pos_weight': 1,  # 类别不平衡时调整
+    # 'early_stopping_rounds': 50,  # 早停策略，如果验证集上的错误50轮没有改善，则停止训练
+    'tree_method': 'hist',  # 使用 CPU/GPU 通用的 hist 方法
+    'device': 'cuda',       # 明确指定使用 CUDA 设备（GPU）
+    # 'predictor': 'gpu_predictor'  # 使用GPU加速进行预测
+}
+# 设置训练的轮数
+num_boost_round=1000
+# 设置提前停止的轮数
+early_stopping_rounds=50
 
 # 读取数据
 df = getDf('C:\py_project\LSTM\stock_data\\QQQ.csv',future_days,num_prev_days)
@@ -81,34 +106,13 @@ df_test = df[train_size:]
 if y_train.isna().any() or np.isinf(y_train).any():
     print("标签数据中存在 NaN 或 Infinity!")
 
-# XGBoost参数配置
-params = {
-    'objective': 'reg:squarederror',  # 适用于回归问题，二分类可以用'binary:logistic'
-    'booster': 'gbtree',  # 使用树模型
-    'eval_metric': 'rmse',  # 评估指标，这里使用均方根误差
-    'learning_rate': 0.01,  # 学习率 (较低的学习率通常更精确，但需要更多树)
-    # 'n_estimators': 1000,  # 最大树的数量
-    'max_depth': 10,  # 树的最大深度
-    'min_child_weight': 1,  # 叶节点最小权重
-    'gamma': 0,  # 控制分裂的复杂度
-    'subsample': 0.9,  # 每棵树训练时使用数据的比例
-    'colsample_bytree': 0.9,  # 每棵树训练时使用特征的比例
-    'lambda': 1,  # L2正则化项
-    'alpha': 0,  # L1正则化项
-    'scale_pos_weight': 1,  # 类别不平衡时调整
-    # 'early_stopping_rounds': 50,  # 早停策略，如果验证集上的错误50轮没有改善，则停止训练
-    'tree_method': 'hist',  # 使用 CPU/GPU 通用的 hist 方法
-    'device': 'cuda',       # 明确指定使用 CUDA 设备（GPU）
-    # 'predictor': 'gpu_predictor'  # 使用GPU加速进行预测
-}
-
-# 删除 y_test 中的 NaN 行，同时删除 X_test 中对应的行
-valid_rows = y_test.dropna().index
-X_test_cleaned = X_test.loc[valid_rows]
-y_test_cleaned = y_test.loc[valid_rows]
+#从训练集中划分实际训练和用于自我纠正的测试集
+e_train_size = int(len(df) * e_train_scale)
+e_X_train, e_y_train = X_train[:e_train_size], y_train[:e_train_size]
+e_X_test, e_y_test = X_train[e_train_size:], y_train[e_train_size:]
 # 创建 DMatrix 对象
-dtrain = xgb.DMatrix(X_train, label=y_train)
-dtest = xgb.DMatrix(X_test_cleaned, label=y_test_cleaned)
+dtrain = xgb.DMatrix(e_X_train, label=e_y_train)
+dtest = xgb.DMatrix(e_X_test, label=e_y_test)
 # 设置 eval_set 以启用早停
 evals = [(dtrain, 'train'), (dtest, 'eval')]
 # 定义 XGBoost 模型,训练模型，指定验证集
@@ -116,9 +120,9 @@ print("开始训练-----")
 model = xgb.train(
     params=params,
     dtrain=dtrain,
-    num_boost_round=1000,  # 设置训练的轮数
+    num_boost_round=num_boost_round,  # 设置训练的轮数
     evals=evals,  # 设置验证集
-    early_stopping_rounds=50  # 设置提前停止的轮数
+    early_stopping_rounds=early_stopping_rounds  # 设置提前停止的轮数
 )
 # 保存模型
 model.save_model('C:\py_project\LSTM\model\\xgb_model.json')
@@ -134,7 +138,7 @@ y_preds = []
 k_test = pd.DataFrame(columns=['Date', 'Open', 'Close', 'High', 'Low', 'Volume', 'y_pred'])
 
 # 滚动预测过程
-for i in range(len(X_test)):
+for i in range(future_days-1,len(X_test)):
     # 获取当前时刻的测试特征
     X_current = X_test.iloc[i:i + 1]
     # 转换成DMatrix
@@ -167,7 +171,39 @@ for i in range(len(X_test)):
         # 将数据添加到 k_test 中
         k_test.loc[len(k_test)] = [date, open_, close, high, low, volume, y_pred[0]]
 
-y_test = y_test.dropna()
+    # 使用最新的训练数据重新训练模型
+    if i<len(X_test)-1:
+        # 将future_days-1天前的最新真实数据和目标值添加到训练集
+        # 为什么用future_days-1天前的而不是当前的？如果用当前的就泄露未来数据了
+        X_train_last = X_test.iloc[i - future_days + 1:i - future_days + 2]
+        y_train_last = y_test.iloc[i - future_days + 1:i - future_days + 2]
+        X_train = pd.concat([X_train, X_train_last], ignore_index=True)
+        y_train = np.append(y_train, y_train_last)
+
+        df_train_last = df_test.iloc[i - future_days + 1:i - future_days + 2]
+        train_last_date = pd.to_datetime(df_train_last['Date'].values[0])  # 强制转换为 datetime 类型
+        print(train_last_date.strftime('%Y-%m-%d'))
+
+        # 从训练集中划分实际训练和用于自我纠正的测试集
+        e_train_size = int(len(df) * e_train_scale)
+        e_X_train, e_y_train = X_train[:e_train_size], y_train[:e_train_size]
+        e_X_test, e_y_test = X_train[e_train_size:], y_train[e_train_size:]
+        # 创建 DMatrix 对象
+        dtrain = xgb.DMatrix(e_X_train, label=e_y_train)
+        dtest = xgb.DMatrix(e_X_test, label=e_y_test)
+        # 设置 eval_set 以启用早停
+        evals = [(dtrain, 'train'), (dtest, 'eval')]
+        # 定义 XGBoost 模型,训练模型，指定验证集
+        print("开始训练-----")
+        model = xgb.train(
+            params=params,
+            dtrain=dtrain,
+            num_boost_round=num_boost_round,  # 设置训练的轮数
+            evals=evals,  # 设置验证集
+            early_stopping_rounds=early_stopping_rounds  # 设置提前停止的轮数
+        )
+
+y_test = y_test.dropna().iloc[future_days-1:]
 # 计算均方误差
 mse = mean_squared_error(y_test, y_preds)
 # 计算标准差
