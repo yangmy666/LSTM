@@ -13,8 +13,6 @@ future_days=30
 num_prev_days=30
 #训练集比例
 train_scale=0.7
-#是否滚动预测？
-roll= False
 
 # 读取数据
 df = getDf('C:\py_project\LSTM\stock_data\\QQQ.csv',future_days,num_prev_days)
