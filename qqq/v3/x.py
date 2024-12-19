@@ -13,8 +13,6 @@ future_days=30
 num_prev_days=30
 #训练集比例
 train_scale=0.95
-#是否滚动预测？
-roll= True
 
 # 读取数据
 df = getDf('C:\py_project\LSTM\stock_data\\QQQ.csv',future_days,num_prev_days)
@@ -141,7 +139,7 @@ for i in range(future_days-1,len(X_test)):
     y_train = np.append(y_train, y_train_last)
 
     # 使用最新的训练数据重新训练模型
-    if roll and i<len(X_test)-1:
+    if i<len(X_test)-1:
         df_train_last = df_test.iloc[i - future_days + 1:i - future_days + 2]
         train_last_date = pd.to_datetime(df_train_last['Date'].values[0])  # 强制转换为 datetime 类型
         print(train_last_date.strftime('%Y-%m-%d'))
