@@ -63,7 +63,7 @@ df_test=df[train_size:]
 if y_train.isna().any() or np.isinf(y_train).any():
     print("标签数据中存在 NaN 或 Infinity!")
 
-# 定义 XGBoost 模型d
+# 定义 XGBoost 模型
 model = xgb.XGBRegressor(objective='reg:squarederror')
 # 训练模型
 model.fit(X_train, y_train)
