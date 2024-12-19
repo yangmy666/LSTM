@@ -103,7 +103,7 @@ y_preds = []
 k_test = pd.DataFrame(columns=['Date', 'Open', 'Close', 'High', 'Low', 'Volume', 'y_pred'])
 
 # 滚动预测过程
-for i in range(len(X_test)):
+for i in range(future_days-1,len(X_test)):
     # 获取当前时刻的测试特征
     X_current = X_test.iloc[i:i + 1]
     # 使用模型进行预测目标
@@ -113,7 +113,6 @@ for i in range(len(X_test)):
     df_current = df_test.iloc[i:i + 1]
     date = pd.to_datetime(df_current['Date'].values[0])  # 强制转换为 datetime 类型
 
-    #最后未知目标的行不训练了只预测用
     if i >= len(X_test)-future_days:
         # 创建新行作为临时DataFrame
         new_row = pd.DataFrame([[date, pd.NA, pd.NA, pd.NA, pd.NA, pd.NA, y_pred[0]]],
@@ -123,9 +122,9 @@ for i in range(len(X_test)):
         # 使用pd.concat拼接
         k_test = pd.concat([k_test, new_row], ignore_index=True)
     else:
-        # 保存预测值
+        # 保存预测值用于计算MSE
         y_preds.append(y_pred[0])
-
+        # 保存到k_test用于展示
         open_ = df_current['Open'].values[0]
         close = df_current['Close'].values[0]
         high = df_current['High'].values[0]
@@ -134,19 +133,21 @@ for i in range(len(X_test)):
         # 将数据添加到 k_test 中
         k_test.loc[len(k_test)] = [date, open_, close, high, low, volume, y_pred[0]]
 
-        # 获取真实的目标值
-        y_current = y_test.iloc[i:i + 1]
+    # 将future_days-1天前的最新真实数据和目标值添加到训练集
+    # 为什么用future_days-1天前的而不是当前的？如果用当前的就泄露未来数据了
+    X_train_last = X_test.iloc[i - future_days + 1:i - future_days + 2]
+    y_train_last = y_test.iloc[i - future_days + 1:i - future_days + 2]
+    X_train = pd.concat([X_train, X_train_last], ignore_index=True)
+    y_train = np.append(y_train, y_train_last)
 
-        # 将当前真实数据和目标值添加到训练集
-        X_train = pd.concat([X_train, X_current], ignore_index=True)
-        y_train = np.append(y_train, y_current)
+    # 使用最新的训练数据重新训练模型
+    if roll and i<len(X_test)-1:
+        df_train_last = df_test.iloc[i - future_days + 1:i - future_days + 2]
+        train_last_date = pd.to_datetime(df_train_last['Date'].values[0])  # 强制转换为 datetime 类型
+        print(train_last_date.strftime('%Y-%m-%d'))
+        model.fit(X_train, y_train)
 
-        # 使用新的训练数据重新训练模型
-        if roll:
-            print(date.strftime('%Y-%m-%d'))
-            model.fit(X_train, y_train)
-
-y_test = y_test.dropna()
+y_test = y_test.dropna().iloc[future_days-1:]
 # 计算均方误差
 mse = mean_squared_error(y_test, y_preds)
 # 计算标准差
