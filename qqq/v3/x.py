@@ -10,7 +10,7 @@ from qqq.v3.data_treat import getDf, generate_feature_columns
 #预测未来第几天
 future_days=10
 #根据最近几天的特征来预测
-num_prev_days=30
+num_prev_days=1
 #训练集比例
 train_scale=0.95
 
